@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no">
+<title>Punto de Venta - Moon&sun</title>
+<script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}
+body{background:#0b0f19;color:#f8fafc;padding:15px;display:flex;justify-content:center}
+.app-container{width:100%;max-width:480px;background:#0f172a;border-radius:16px;border:1px solid #1e293b;overflow:hidden;box-shadow:0 10px 25px rgba(0,0,0,.5)}
+.app-header{background:#1e293b;padding:12px 15px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #334155}
+.app-title{font-size:.95rem;font-weight:bold;color:#38bdf8}
+.nav-buttons button{background:#0f172a;border:1px solid #334155;color:#cbd5e1;padding:5px 10px;border-radius:6px;font-size:.75rem;cursor:pointer}
+.nav-buttons button.active{background:#38bdf8;color:#0f172a;font-weight:bold;border-color:#38bdf8}
+.view-section{display:none;padding:15px}.view-section.active{display:block}
+.card{background:#121824;border:1px solid #1e293b;border-radius:10px;padding:12px;margin-bottom:12px}
+.card-title{font-size:.8rem;color:#94a3b8;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;font-weight:bold}
+input,select{width:100%;padding:10px;background:#0f172a;border:1px solid #334155;color:#fff;border-radius:6px;font-size:.9rem;margin-bottom:8px}
+input:focus,select:focus{outline:none;border-color:#38bdf8}
+.btn-primary{background:#22c55e;color:#fff;border:0;padding:12px;border-radius:8px;width:100%;font-weight:bold;cursor:pointer;font-size:.95rem}
+.btn-outline{background:transparent;border:1px dashed #38bdf8;color:#38bdf8;padding:8px;width:100%;border-radius:6px;cursor:pointer;font-weight:bold;font-size:.85rem}
+.btn-secondary{background:#334155;color:#fff;border:0;padding:10px;border-radius:6px;cursor:pointer;font-weight:bold;width:100%;font-size:.85rem}
+.btn-secondary:disabled{opacity:.6}
+#reader{width:100%;border-radius:8px;overflow:hidden;margin-bottom:8px;background:#000;display:none}
+#reader video{width:100%!important;height:auto!important}
+#reader__dashboard{background:#0f172a!important;color:#fff!important}
+.scanner-status{text-align:center;font-size:.75rem;color:#38bdf8;margin:5px 0;display:none}
+.mensaje-scanner{padding:9px;border-radius:6px;background:#172033;font-size:.8rem;text-align:center;margin:5px 0;display:none}
+.ticket-list{min-height:80px;max-height:140px;overflow-y:auto;font-size:.85rem;color:#cbd5e1;margin-bottom:10px;border-bottom:1px solid #1e293b;padding-bottom:5px}
+.ticket-item{display:flex;justify-content:space-between;gap:10px;margin-bottom:6px}.ticket-item span{flex:1}.ticket-item strong{white-space:nowrap}
+.total-box{display:flex;justify-content:space-between;align-items:center;background:#0b0f19;padding:10px;border-radius:6px;margin-bottom:10px}
+.total-amount{font-size:1.4rem;font-weight:bold;color:#4ade80}
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.cash-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;text-align:center;margin-bottom:8px}
+.cash-box{background:#0b0f19;padding:8px;border-radius:6px}.cash-box span{display:block;font-size:.7rem;color:#94a3b8}.cash-box strong{font-size:.9rem;color:#38bdf8}
+.renglon-item{background:#161e2e;padding:10px;border-radius:8px;margin-bottom:8px;border:1px solid #1e293b}
+</style>
+</head>
+<body>
+<div class="app-container">
+<div class="app-header">
+<div class="app-title">🌙✨ Moon&sun</div>
+<div class="nav-buttons">
+<button id="btnTabVenta" class="active" onclick="cambiarVista('venta')">Venta</button>
+<button id="btnTabEntrada" onclick="cambiarVista('entrada')">+ Mercancía</button>
+</div></div>
+
+<div id="vistaVenta" class="view-section active">
+<div class="card">
+<div class="card-title">Escáner de Código</div>
+<button class="btn-secondary" id="btnToggleCamara" onclick="toggleCamara()" style="margin-bottom:8px">📷 Encender Cámara</button>
+<div id="reader"></div>
+<div id="scannerStatus" class="scanner-status"></div>
+<div id="mensajeScanner" class="mensaje-scanner"></div>
+<input type="text" id="codigoBarrasInput" placeholder="Código o SKU de la joya..." autocomplete="off" onkeypress="if(event.key==='Enter')agregarAlTicketPorInput()">
+</div>
+
+<div class="card">
+<div class="card-title" style="display:flex;justify-content:space-between"><span>Ticket de Venta</span><span style="color:#f87171;cursor:pointer" onclick="vaciarTicket()">Vaciar</span></div>
+<div id="ticketContenido" class="ticket-list"><div style="color:#64748b;text-align:center;padding:20px">Ticket vacío. Escanea o busca una pieza.</div></div>
+<div class="total-box"><span style="color:#94a3b8;font-size:.85rem">TOTAL:</span><span id="totalVenta" class="total-amount">$0.00</span></div>
+<div class="grid-2">
+<div><label style="font-size:.75rem;color:#94a3b8">Efectivo ($)</label><input type="number" id="pagoEfectivo" value="0.00" min="0" step=".01" oninput="calcularCambio()"></div>
+<div><label style="font-size:.75rem;color:#94a3b8">Cambio ($)</label><input type="text" id="cambioDevolver" value="$0.00" disabled style="color:#38bdf8;font-weight:bold"></div>
+</div>
+<button class="btn-primary" onclick="finalizarCobro()">✓ Finalizar y Cobrar</button>
+</div>
+
+<div class="card" style="margin-bottom:0">
+<div class="card-title">Caja del Día (<span id="fechaHoy"></span>)</div>
+<div class="cash-grid">
+<div class="cash-box"><span>Tickets</span><strong id="cajaTickets">0</strong></div>
+<div class="cash-box"><span>Efectivo</span><strong id="cajaEfectivo">$0.00</strong></div>
+<div class="cash-box"><span>Ventas</span><strong id="cajaVentas">$0.00</strong></div>
+</div></div>
+</div>
+
+<div id="vistaEntrada" class="view-section">
+<div class="card">
+<div class="card-title">📦 Registrar Entrada de Proveedor</div>
+<div class="grid-2">
+<div><label style="font-size:.75rem;color:#94a3b8">Proveedor</label><input type="text" id="inputProveedor" placeholder="Ej. Mayorista Acero"></div>
+<div><label style="font-size:.75rem;color:#94a3b8">Fecha</label><input type="date" id="inputFecha"></div>
+</div></div>
+<div class="card">
+<div class="card-title">Artículos en la Nota</div>
+<div id="listaProductosEntrada">
+<div class="renglon-item">
+<input type="text" placeholder="Modelo / Talla / Medida" class="ent-nombre" style="margin-bottom:6px">
+<div class="grid-2"><input type="number" placeholder="Cant." class="ent-cant" min="0" oninput="calcularInversionTotal()"><input type="number" placeholder="Costo ($)" class="ent-costo" min="0" step=".01" oninput="calcularInversionTotal()"></div>
+</div></div>
+<button class="btn-outline" onclick="agregarRenglonEntrada()">+ Agregar otro producto</button>
+</div>
+<div class="card">
+<div class="total-box"><span style="color:#94a3b8;font-size:.85rem">Inversión Total:</span><span id="lblInversionTotal" class="total-amount" style="font-size:1.1rem">$0.00</span></div>
+<button class="btn-primary" onclick="guardarEntradaMercancia()" style="background:#2563eb">Guardar y Actualizar Stock</button>
+</div>
+</div>
+</div>
+
+<script>
+const fechaActual=new Date().toISOString().split("T")[0];
+document.getElementById("fechaHoy").innerText=new Date().toLocaleDateString("es-MX");
+document.getElementById("inputFecha").value=fechaActual;
+
+const catalogoMoonSun=[
+{sku:"750101",nombre:"Anillo Ajustable Zirconia T7",precio:180},
+{sku:"750102",nombre:"Cadena Eslabón Cubano 50cm",precio:320},
+{sku:"750103",nombre:"Pulsera Esclava Acero Dama",precio:250},
+{sku:"750104",nombre:"Arracadas Clásicas 30mm",precio:190}
+];
+
+let carrito=[];
+let cajaData={tickets:0,efectivo:0,ventas:0};
+let html5QrCode=null;
+let camaraEncendida=false;
+let procesandoCodigo=false;
+
+function cambiarVista(vista){
+if(camaraEncendida)detenerCamara();
+document.getElementById("vistaVenta").classList.toggle("active",vista==="venta");
+document.getElementById("vistaEntrada").classList.toggle("active",vista==="entrada");
+document.getElementById("btnTabVenta").classList.toggle("active",vista==="venta");
+document.getElementById("btnTabEntrada").classList.toggle("active",vista==="entrada");
+}
+
+function toggleCamara(){
+if(camaraEncendida)detenerCamara();else iniciarCamara();
+}
+
+async function iniciarCamara(){
+const reader=document.getElementById("reader");
+const boton=document.getElementById("btnToggleCamara");
+const status=document.getElementById("scannerStatus");
+const mensaje=document.getElementById("mensajeScanner");
+
+mensaje.style.display="none";
+reader.style.display="block";
+status.style.display="block";
+status.innerText="📷 Buscando cámara...";
+boton.disabled=true;
+
+try{
+if(!window.Html5Qrcode)throw new Error("La librería del escáner no se cargó. Comprueba tu conexión a Internet.");
+const cameras=await Html5Qrcode.getCameras();
+if(!cameras||!cameras.length)throw new Error("El navegador no encontró ninguna cámara.");
+
+let cameraId=cameras[0].id;
+const trasera=cameras.find(c=>{
+const n=(c.label||"").toLowerCase();
+return n.includes("back")||n.includes("rear")||n.includes("environment")||n.includes("trasera")||n.includes("posterior");
+});
+if(trasera)cameraId=trasera.id;
+
+if(html5QrCode){
+try{await html5QrCode.clear()}catch(e){}
+}
+html5QrCode=new Html5Qrcode("reader");
+
+const formatos=[
+Html5QrcodeSupportedFormats.EAN_13,
+Html5QrcodeSupportedFormats.EAN_8,
+Html5QrcodeSupportedFormats.UPC_A,
+Html5QrcodeSupportedFormats.UPC_E,
+Html5QrcodeSupportedFormats.CODE_128,
+Html5QrcodeSupportedFormats.CODE_39,
+Html5QrcodeSupportedFormats.ITF,
+Html5QrcodeSupportedFormats.QR_CODE
+];
+
+await html5QrCode.start(
+cameraId,
+{
+fps:10,
+qrbox:(w,h)=>{
+let bw=Math.min(Math.floor(w*.85),350);
+let bh=Math.min(Math.floor(h*.35),180);
+return{width:bw,height:bh};
+},
+formatsToSupport:formatos
+},
+decodedText=>{
+if(procesandoCodigo)return;
+procesandoCodigo=true;
+procesarCodigoLeido(decodedText);
+setTimeout(()=>procesandoCodigo=false,1500);
+detenerCamara();
+},
+()=>{}
+);
+
+camaraEncendida=true;
+boton.disabled=false;
+boton.innerText="⏹ Apagar Cámara";
+status.innerText="🔎 Cámara activa — apunta al código de barras";
+
+}catch(error){
+console.error("Error al iniciar cámara:",error);
+camaraEncendida=false;
+boton.disabled=false;
+boton.innerText="📷 Encender Cámara";
+reader.style.display="none";
+status.style.display="none";
+
+let detalle=error&&error.message?error.message:"Error desconocido";
+mensaje.style.display="block";
+mensaje.style.color="#fbbf24";
+mensaje.innerText="⚠️ No se pudo iniciar la cámara.\n"+detalle+"\n\nSi estás usando la Vista previa de GitHub, abre la página publicada mediante GitHub Pages y permite el acceso a la cámara.";
+}
+}
+
+async function detenerCamara(){
+const reader=document.getElementById("reader");
+const boton=document.getElementById("btnToggleCamara");
+const status=document.getElementById("scannerStatus");
+
+if(html5QrCode){
+try{
+if(camaraEncendida)await html5QrCode.stop();
+}catch(e){console.warn(e)}
+try{await html5QrCode.clear()}catch(e){}
+}
+html5QrCode=null;
+camaraEncendida=false;
+reader.innerHTML="";
+reader.style.display="none";
+boton.disabled=false;
+boton.innerText="📷 Encender Cámara";
+status.style.display="none";
+}
+
+function procesarCodigoLeido(codigo){
+codigo=String(codigo).trim();
+if(!codigo)return;
+document.getElementById("codigoBarrasInput").value=codigo;
+
+const producto=catalogoMoonSun.find(p=>String(p.sku)===codigo);
+if(producto){
+agregarAlCarritoDirecto(producto);
+mostrarMensaje("✅ Producto encontrado y agregado al ticket.",true);
+}else{
+mostrarMensaje("⚠️ Código "+codigo+" no está registrado en el catálogo.",false);
+}
+}
+
+function mostrarMensaje(texto,ok){
+const el=document.getElementById("mensajeScanner");
+el.innerText=texto;
+el.style.display="block";
+el.style.color=ok?"#4ade80":"#fbbf24";
+}
+
+function agregarAlTicketPorInput(){
+const input=document.getElementById("codigoBarrasInput");
+const valor=input.value.trim();
+if(!valor)return;
+const producto=catalogoMoonSun.find(p=>String(p.sku)===valor||p.nombre.toLowerCase().includes(valor.toLowerCase()));
+if(producto){
+agregarAlCarritoDirecto(producto);
+mostrarMensaje("✅ Producto agregado al ticket.",true);
+}else{
+mostrarMensaje("⚠️ Producto no encontrado en el catálogo.",false);
+}
+input.value="";
+}
+
+function agregarAlCarritoDirecto(prod){
+carrito.push({sku:prod.sku||"",nombre:prod.nombre,precio:Number(prod.precio)||0});
+actualizarVistaTicket();
+}
+
+function actualizarVistaTicket(){
+const cont=document.getElementById("ticketContenido");
+if(!carrito.length){
+cont.innerHTML='<div style="color:#64748b;text-align:center;padding:20px">Ticket vacío. Escanea o busca una pieza.</div>';
+document.getElementById("totalVenta").innerText="$0.00";
+calcularCambio();
+return;
+}
+let total=0;
+cont.innerHTML=carrito.map(item=>{
+total+=item.precio;
+return `<div class="ticket-item"><span>${escapeHtml(item.nombre)}</span><strong>$${item.precio.toFixed(2)}</strong></div>`;
+}).join("");
+document.getElementById("totalVenta").innerText="$"+total.toFixed(2);
+calcularCambio();
+}
+
+function escapeHtml(text){
+const div=document.createElement("div");
+div.textContent=text;
+return div.innerHTML;
+}
+
+function vaciarTicket(){
+carrito=[];
+actualizarVistaTicket();
+}
+
+function calcularCambio(){
+const total=carrito.reduce((a,i)=>a+i.precio,0);
+const efectivo=parseFloat(document.getElementById("pagoEfectivo").value)||0;
+const cambio=efectivo-total;
+document.getElementById("cambioDevolver").value=cambio>=0?"$"+cambio.toFixed(2):"$0.00";
+}
+
+function finalizarCobro(){
+const total=carrito.reduce((a,i)=>a+i.precio,0);
+if(total<=0){alert("El ticket está vacío.");return}
+const efectivo=parseFloat(document.getElementById("pagoEfectivo").value)||0;
+if(efectivo<total){alert("El efectivo es menor al total de la compra.");return}
+
+cajaData.tickets++;
+cajaData.efectivo+=efectivo;
+cajaData.ventas+=total;
+
+document.getElementById("cajaTickets").innerText=cajaData.tickets;
+document.getElementById("cajaEfectivo").innerText="$"+cajaData.efectivo.toFixed(2);
+document.getElementById("cajaVentas").innerText="$"+cajaData.ventas.toFixed(2);
+
+alert("¡Venta cobrada con éxito en Moon&sun!\n\nTotal: $"+total.toFixed(2)+"\nEfectivo: $"+efectivo.toFixed(2)+"\nCambio: $"+(efectivo-total).toFixed(2));
+vaciarTicket();
+document.getElementById("pagoEfectivo").value="0.00";
+calcularCambio();
+}
+
+function agregarRenglonEntrada(){
+const cont=document.getElementById("listaProductosEntrada");
+const div=document.createElement("div");
+div.className="renglon-item";
+div.innerHTML='<input type="text" placeholder="Modelo / Talla / Medida" class="ent-nombre" style="margin-bottom:6px"><div class="grid-2"><input type="number" placeholder="Cant." class="ent-cant" min="0" oninput="calcularInversionTotal()"><input type="number" placeholder="Costo ($)" class="ent-costo" min="0" step=".01" oninput="calcularInversionTotal()"></div>';
+cont.appendChild(div);
+}
+
+function calcularInversionTotal(){
+let total=0;
+document.querySelectorAll(".renglon-item").forEach(r=>{
+const cant=parseFloat(r.querySelector(".ent-cant").value)||0;
+const costo=parseFloat(r.querySelector(".ent-costo").value)||0;
+total+=cant*costo;
+});
+document.getElementById("lblInversionTotal").innerText="$"+total.toFixed(2);
+}
+
+function guardarEntradaMercancia(){
+const proveedor=document.getElementById("inputProveedor").value.trim();
+if(!proveedor){alert("Por favor ingresa el nombre del proveedor.");return}
+
+let validos=0;
+document.querySelectorAll(".renglon-item").forEach(r=>{
+const nombre=r.querySelector(".ent-nombre").value.trim();
+const cantidad=parseFloat(r.querySelector(".ent-cant").value)||0;
+if(nombre&&cantidad>0)validos++;
+});
+if(!validos){alert("Agrega al menos un producto válido.");return}
+alert("¡Entrada de mercancía registrada y stock actualizado en Moon&sun!");
+cambiarVista("venta");
+}
+
+window.addEventListener("beforeunload",()=>{
+if(html5QrCode&&camaraEncendida)html5QrCode.stop().catch(()=>{});
+});
+</script>
+</body>
+</html>
