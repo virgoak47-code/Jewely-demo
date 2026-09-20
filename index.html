@@ -1,285 +1,299 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Moonsun - Joyería en Acero Inoxidable</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;900&family=Plus+Jakarta+Sans:wght@300;400;600;700&display=swap" rel="stylesheet">
-  <style>
-    body { font-family: 'Plus Jakarta Sans', sans-serif; }
-    .font-serif-title { font-family: 'Cinzel', serif; }
-    .no-scrollbar::-webkit-scrollbar { display: none; }
-    .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Punto de Venta - Moon&sun</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+        body { background: #0b0f19; color: #f8fafc; padding: 15px; display: flex; justify-content: center; }
+        .app-container { width: 100%; max-width: 480px; background: #0f172a; border-radius: 16px; border: 1px solid #1e293b; overflow: hidden; box-shadow: 0 10px 25px rgba(0,0,0,0.5); }
+        
+        /* Header */
+        .app-header { background: #1e293b; padding: 12px 15px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #334155; }
+        .app-title { font-size: 0.95rem; font-weight: bold; color: #38bdf8; }
+        .nav-buttons button { background: #0f172a; border: 1px solid #334155; color: #cbd5e1; padding: 5px 10px; border-radius: 6px; font-size: 0.75rem; cursor: pointer; }
+        .nav-buttons button.active { background: #38bdf8; color: #0f172a; font-weight: bold; border-color: #38bdf8; }
+
+        /* Views */
+        .view-section { display: none; padding: 15px; }
+        .view-section.active { display: block; }
+
+        /* POS Styles */
+        .card { background: #121824; border: 1px solid #1e293b; border-radius: 10px; padding: 12px; margin-bottom: 12px; }
+        .card-title { font-size: 0.8rem; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px; font-weight: bold; }
+        
+        input, select { width: 100%; padding: 10px; background: #0f172a; border: 1px solid #334155; color: #fff; border-radius: 6px; font-size: 0.9rem; margin-bottom: 8px; }
+        
+        .btn-primary { background: #22c55e; color: #fff; border: none; padding: 12px; border-radius: 8px; width: 100%; font-weight: bold; cursor: pointer; font-size: 0.95rem; }
+        .btn-outline { background: transparent; border: 1px dashed #38bdf8; color: #38bdf8; padding: 8px; width: 100%; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 0.85rem; }
+        .btn-secondary { background: #334155; color: #fff; border: none; padding: 10px; border-radius: 6px; cursor: pointer; font-weight: bold; width: 100%; font-size: 0.85rem; }
+
+        .ticket-list { min-height: 80px; max-height: 140px; overflow-y: auto; font-size: 0.85rem; color: #cbd5e1; margin-bottom: 10px; border-bottom: 1px solid #1e293b; padding-bottom: 5px; }
+        .ticket-item { display: flex; justify-content: space-between; margin-bottom: 6px; }
+
+        .total-box { display: flex; justify-content: space-between; align-items: center; background: #0b0f19; padding: 10px; border-radius: 6px; margin-bottom: 10px; }
+        .total-amount { font-size: 1.4rem; font-weight: bold; color: #4ade80; }
+
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+        
+        /* Cash summary */
+        .cash-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; text-align: center; margin-bottom: 8px; }
+        .cash-box { background: #0b0f19; padding: 8px; border-radius: 6px; }
+        .cash-box span { display: block; font-size: 0.7rem; color: #94a3b8; }
+        .cash-box strong { font-size: 0.9rem; color: #38bdf8; }
+
+        /* Inventory Entry Styles */
+        .renglon-item { background: #161e2e; padding: 10px; border-radius: 8px; margin-bottom: 8px; border: 1px solid #1e293b; }
+    </style>
 </head>
-<body class="bg-zinc-950 text-zinc-100 antialiased min-h-screen pb-32">
+<body>
 
-  <!-- Header Fijo -->
-  <header class="bg-zinc-900/95 border-b border-zinc-800 p-4 sticky top-0 backdrop-blur-md z-30">
-    <div class="max-w-md mx-auto text-center space-y-1">
-      <h1 class="font-serif-title text-2xl font-black tracking-[0.25em] text-amber-200">M O O N S U N</h1>
-      <p class="text-[9px] text-zinc-400 uppercase tracking-widest font-semibold">Joyería en Acero Inoxidable</p>
-      
-      <!-- Badges de Garantía -->
-      <div class="flex items-center justify-center gap-2 pt-1">
-        <span class="text-[9px] bg-amber-500/10 text-amber-300 border border-amber-500/30 px-2 py-0.5 rounded-full font-medium">✨ Acero 316L</span>
-        <span class="text-[9px] bg-blue-500/10 text-blue-300 border border-blue-500/30 px-2 py-0.5 rounded-full font-medium">💧 Inoxidable / Water-resistant</span>
-      </div>
-    </div>
-  </header>
-
-  <main class="max-w-md mx-auto p-4 space-y-5">
-
-    <!-- FILTROS RÁPIDOS (Categorías) -->
-    <div class="flex gap-2 overflow-x-auto no-scrollbar pb-1 text-xs">
-      <button onclick="filterCategory('todos')" id="tab-todos" class="category-tab bg-amber-500 text-zinc-950 font-bold px-4 py-2 rounded-xl whitespace-nowrap shadow-sm">Todos</button>
-      <button onclick="filterCategory('collares')" id="tab-collares" class="category-tab bg-zinc-900 text-zinc-400 font-semibold px-4 py-2 rounded-xl border border-zinc-800 whitespace-nowrap">Collares</button>
-      <button onclick="filterCategory('aretes')" id="tab-aretes" class="category-tab bg-zinc-900 text-zinc-400 font-semibold px-4 py-2 rounded-xl border border-zinc-800 whitespace-nowrap">Aretes</button>
-      <button onclick="filterCategory('pulseras')" id="tab-pulseras" class="category-tab bg-zinc-900 text-zinc-400 font-semibold px-4 py-2 rounded-xl border border-zinc-800 whitespace-nowrap">Pulseras</button>
+<div class="app-container">
+    <!-- HEADER Y NAVEGACIÓN -->
+    <div class="app-header">
+        <div class="app-title">🌙✨ Moon&sun</div>
+        <div class="nav-buttons">
+            <button id="btnTabVenta" class="active" onclick="cambiarVista('venta')">Venta</button>
+            <button id="btnTabEntrada" onclick="cambiarVista('entrada')">+ Mercancía</button>
+        </div>
     </div>
 
-    <!-- CATÁLOGO -->
-    <section class="space-y-3.5">
-
-      <!-- ITEM 1: COLLAR -->
-      <div class="product-card item-collares bg-zinc-900 border border-zinc-800/80 rounded-2xl p-4 space-y-3 shadow-lg">
-        <div class="flex justify-between items-start gap-3">
-          <div class="space-y-1">
-            <span class="text-[9px] font-bold uppercase tracking-wider text-amber-400/80">Collar</span>
-            <h3 class="font-bold text-zinc-100 text-sm">Collar Dije "Astro Moon"</h3>
-            <p class="text-xs text-zinc-400">Cadena fina de acero inoxidable con zirconia incrustada.</p>
-            <p class="text-xs font-bold text-amber-300 pt-1">$280 MXN</p>
-          </div>
-          <div class="flex items-center gap-2 bg-zinc-950 p-1 rounded-xl border border-zinc-800">
-            <button onclick="updateQty('collarMoon', -1)" class="w-7 h-7 bg-zinc-800 text-zinc-200 rounded-lg font-bold text-sm shadow">-</button>
-            <span id="qty-collarMoon" class="font-bold text-xs min-w-[16px] text-center">0</span>
-            <button onclick="updateQty('collarMoon', 1)" class="w-7 h-7 bg-amber-600 text-white rounded-lg font-bold text-sm shadow">+</button>
-          </div>
+    <!-- VISTA 1: PUNTO DE VENTA -->
+    <div id="vistaVenta" class="view-section active">
+        <!-- Escáner / Entrada -->
+        <div class="card">
+            <div class="card-title">Búsqueda / Código</div>
+            <button class="btn-secondary" style="margin-bottom: 8px;" onclick="simularEscaneo()">📷 Escanear Pieza</button>
+            <input type="text" id="codigoBarrasInput" placeholder="Código o SKU de la joya..." onkeypress="if(event.key === 'Enter') agregarAlTicket()">
+            <input type="text" id="buscarNombreInput" placeholder="Buscar por tipo, talla o medida..." oninput="filtrarCatalogo()">
         </div>
 
-        <div class="pt-2 border-t border-zinc-800/60 flex items-center justify-between text-xs">
-          <label class="text-[10px] text-zinc-400 font-medium">Acabado:</label>
-          <select id="mat-collarMoon" class="bg-zinc-950 border border-zinc-700 rounded-lg px-2.5 py-1 text-zinc-200 text-xs outline-none">
-            <option value="Dorado (Chapa 18K)">Dorado (Baño 18K)</option>
-            <option value="Plateado Espejo">Plateado Acero</option>
-          </select>
-        </div>
-      </div>
-
-      <!-- ITEM 2: ARETES -->
-      <div class="product-card item-aretes bg-zinc-900 border border-zinc-800/80 rounded-2xl p-4 space-y-3 shadow-lg">
-        <div class="flex justify-between items-start gap-3">
-          <div class="space-y-1">
-            <span class="text-[9px] font-bold uppercase tracking-wider text-amber-400/80">Aretes</span>
-            <h3 class="font-bold text-zinc-100 text-sm">Arracadas "Chunky Huggies"</h3>
-            <p class="text-xs text-zinc-400">Diseño grueso liviano. 100% hipoalergénico.</p>
-            <p class="text-xs font-bold text-amber-300 pt-1">$220 MXN</p>
-          </div>
-          <div class="flex items-center gap-2 bg-zinc-950 p-1 rounded-xl border border-zinc-800">
-            <button onclick="updateQty('arracadasChunky', -1)" class="w-7 h-7 bg-zinc-800 text-zinc-200 rounded-lg font-bold text-sm shadow">-</button>
-            <span id="qty-arracadasChunky" class="font-bold text-xs min-w-[16px] text-center">0</span>
-            <button onclick="updateQty('arracadasChunky', 1)" class="w-7 h-7 bg-amber-600 text-white rounded-lg font-bold text-sm shadow">+</button>
-          </div>
-        </div>
-
-        <div class="pt-2 border-t border-zinc-800/60 flex items-center justify-between text-xs">
-          <label class="text-[10px] text-zinc-400 font-medium">Acabado:</label>
-          <select id="mat-arracadasChunky" class="bg-zinc-950 border border-zinc-700 rounded-lg px-2.5 py-1 text-zinc-200 text-xs outline-none">
-            <option value="Dorado">Dorado</option>
-            <option value="Plateado">Plateado</option>
-          </select>
-        </div>
-      </div>
-
-      <!-- ITEM 3: PULSERA -->
-      <div class="product-card item-pulseras bg-zinc-900 border border-zinc-800/80 rounded-2xl p-4 space-y-3 shadow-lg">
-        <div class="flex justify-between items-start gap-3">
-          <div class="space-y-1">
-            <span class="text-[9px] font-bold uppercase tracking-wider text-amber-400/80">Pulsera</span>
-            <h3 class="font-bold text-zinc-100 text-sm">Pulsera Eslabón "Cuban Link"</h3>
-            <p class="text-xs text-zinc-400">Tejido clásico con broche de seguridad reforzado.</p>
-            <p class="text-xs font-bold text-amber-300 pt-1">$250 MXN</p>
-          </div>
-          <div class="flex items-center gap-2 bg-zinc-950 p-1 rounded-xl border border-zinc-800">
-            <button onclick="updateQty('pulseraCuban', -1)" class="w-7 h-7 bg-zinc-800 text-zinc-200 rounded-lg font-bold text-sm shadow">-</button>
-            <span id="qty-pulseraCuban" class="font-bold text-xs min-w-[16px] text-center">0</span>
-            <button onclick="updateQty('pulseraCuban', 1)" class="w-7 h-7 bg-amber-600 text-white rounded-lg font-bold text-sm shadow">+</button>
-          </div>
+        <!-- Ticket de Compra -->
+        <div class="card">
+            <div class="card-title" style="display: flex; justify-content: space-between;">
+                <span>Ticket de Venta</span>
+                <span style="color: #f87171; cursor: pointer;" onclick="vaciarTicket()">Vaciar</span>
+            </div>
+            <div id="ticketContenido" class="ticket-list">
+                <div style="color: #64748b; text-align: center; padding: 20px;">Ticket vacío. Selecciona o escanea una pieza.</div>
+            </div>
+            <div class="total-box">
+                <span style="color: #94a3b8; font-size: 0.85rem;">TOTAL:</span>
+                <span id="totalVenta" class="total-amount">$0.00</span>
+            </div>
+            <div class="grid-2">
+                <div>
+                    <label style="font-size: 0.75rem; color: #94a3b8;">Efectivo ($)</label>
+                    <input type="number" id="pagoEfectivo" value="0.00" oninput="calcularCambio()">
+                </div>
+                <div>
+                    <label style="font-size: 0.75rem; color: #94a3b8;">Cambio ($)</label>
+                    <input type="text" id="cambioDevolver" value="$0.00" disabled style="color: #38bdf8; font-weight: bold;">
+                </div>
+            </div>
+            <button class="btn-primary" onclick="finalizarCobro()">✓ Finalizar y Cobrar</button>
         </div>
 
-        <div class="pt-2 border-t border-zinc-800/60 flex items-center justify-between text-xs">
-          <label class="text-[10px] text-zinc-400 font-medium">Acabado:</label>
-          <select id="mat-pulseraCuban" class="bg-zinc-950 border border-zinc-700 rounded-lg px-2.5 py-1 text-zinc-200 text-xs outline-none">
-            <option value="Dorado">Dorado</option>
-            <option value="Plateado">Plateado</option>
-          </select>
+        <!-- Caja del Día -->
+        <div class="card" style="margin-bottom: 0;">
+            <div class="card-title">Caja del Día (<span id="fechaHoy"></span>)</div>
+            <div class="cash-grid">
+                <div class="cash-box">
+                    <span>Tickets</span>
+                    <strong id="cajaTickets">0</strong>
+                </div>
+                <div class="cash-box">
+                    <span>Efectivo</span>
+                    <strong id="cajaEfectivo">$0.00</strong>
+                </div>
+                <div class="cash-box">
+                    <span>Ventas</span>
+                    <strong id="cajaVentas">$0.00</strong>
+                </div>
+            </div>
         </div>
-      </div>
-
-    </section>
-
-    <!-- DETALLES DE REGALO -->
-    <section class="bg-zinc-900 border border-zinc-800/80 rounded-2xl p-4 space-y-3">
-      <h2 class="font-bold text-xs uppercase tracking-wider text-zinc-400">🎁 Presentación y Dedicatoria</h2>
-      
-      <label class="flex items-center justify-between p-2.5 bg-zinc-950 rounded-xl border border-zinc-800 cursor-pointer">
-        <div class="flex items-center gap-2.5">
-          <input type="checkbox" id="gift-box" onchange="calculateTotal()" class="accent-amber-500 w-4 h-4 rounded">
-          <div>
-            <p class="font-semibold text-xs text-zinc-200">Empaque Especial Moonsun</p>
-            <p class="text-[10px] text-zinc-500">Caja rígida + bolsa de terciopelo + moño</p>
-          </div>
-        </div>
-        <span class="text-xs font-bold text-amber-300">+$35 MXN</span>
-      </label>
-
-      <input type="text" id="gift-note" placeholder="Mensaje para tarjeta personalizada (Opcional)" class="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-2.5 text-xs text-zinc-200 outline-none focus:border-amber-500">
-    </section>
-
-    <!-- DATOS DE ENVÍO -->
-    <section class="bg-zinc-900 border border-zinc-800/80 rounded-2xl p-4 space-y-3 text-xs">
-      <h2 class="font-bold text-xs uppercase tracking-wider text-zinc-400">📦 Envío y Entrega</h2>
-      
-      <div>
-        <label class="block font-semibold text-zinc-300 mb-1">Método de Envío</label>
-        <select id="shipping" onchange="calculateTotal()" class="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-2.5 text-zinc-200 font-semibold outline-none focus:border-amber-500">
-          <option value="0">Entrega en punto medio / Pickup ($0)</option>
-          <option value="35" selected>Envío Local Express (+$35 MXN)</option>
-          <option value="130">Envío Nacional por Paquetería (+$130 MXN)</option>
-        </select>
-      </div>
-
-      <div class="space-y-2 pt-1">
-        <input type="text" id="customer-name" placeholder="Tu nombre completo" class="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-2.5 text-zinc-200 outline-none focus:border-amber-500">
-        <input type="text" id="address" placeholder="Dirección completa o ciudad de entrega" class="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-2.5 text-zinc-200 outline-none focus:border-amber-500">
-      </div>
-    </section>
-
-    <!-- MÉTODO DE PAGO -->
-    <section class="bg-zinc-900 border border-zinc-800/80 rounded-2xl p-4 space-y-3 text-xs">
-      <h2 class="font-bold text-xs uppercase tracking-wider text-zinc-400">💳 Método de Pago</h2>
-      <div class="grid grid-cols-2 gap-2">
-        <label class="flex items-center justify-center p-2.5 bg-zinc-950 rounded-xl border border-zinc-800 cursor-pointer font-bold text-zinc-300 has-[:checked]:border-amber-500 has-[:checked]:text-amber-200">
-          <input type="radio" name="payment" value="Transferencia / SPEI" checked class="hidden"> Transferencia SPEI
-        </label>
-        <label class="flex items-center justify-center p-2.5 bg-zinc-950 rounded-xl border border-zinc-800 cursor-pointer font-bold text-zinc-300 has-[:checked]:border-amber-500 has-[:checked]:text-amber-200">
-          <input type="radio" name="payment" value="Efectivo en Entrega" class="hidden"> Efectivo
-        </label>
-      </div>
-    </section>
-
-  </main>
-
-  <!-- FOOTER Y BOTÓN DE ACCIÓN -->
-  <footer class="fixed bottom-0 left-0 right-0 bg-zinc-900/95 border-t border-zinc-800 p-4 backdrop-blur-md z-40">
-    <div class="max-w-md mx-auto flex items-center justify-between gap-4">
-      <div>
-        <span class="text-[10px] font-bold text-zinc-500 uppercase tracking-wider block">Total estimado</span>
-        <span id="total-price" class="text-2xl font-black text-amber-200">$0 MXN</span>
-      </div>
-      <button onclick="sendOrder()" class="flex-1 bg-gradient-to-r from-amber-600 to-amber-700 hover:from-amber-500 hover:to-amber-600 active:scale-95 text-white font-bold py-3.5 px-4 rounded-xl shadow-lg shadow-amber-900/30 text-xs flex items-center justify-center gap-2 transition">
-        <span>Pedir por WhatsApp</span>
-        <svg class="w-4 h-4 fill-current" viewBox="0 0 24 24"><path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.981z"/></svg>
-      </button>
     </div>
-  </footer>
 
-  <script>
-    const prices = { collarMoon: 280, arracadasChunky: 220, pulseraCuban: 250 };
-    const items = { collarMoon: 0, arracadasChunky: 0, pulseraCuban: 0 };
-    const PHONE_NUMBER = "5219830000000"; // Reemplazar con el WhatsApp de Moonsun
+    <!-- VISTA 2: ENTRADA DE MERCANCÍA -->
+    <div id="vistaEntrada" class="view-section">
+        <div class="card">
+            <div class="card-title">📦 Registrar Entrada de Proveedor</div>
+            <div class="grid-2">
+                <div>
+                    <label style="font-size: 0.75rem; color: #94a3b8;">Proveedor</label>
+                    <input type="text" id="inputProveedor" placeholder="Ej. Mayorista Acero">
+                </div>
+                <div>
+                    <label style="font-size: 0.75rem; color: #94a3b8;">Fecha</label>
+                    <input type="date" id="inputFecha">
+                </div>
+            </div>
+        </div>
 
-    function updateQty(item, change) {
-      if (items[item] + change >= 0) {
-        items[item] += change;
-        document.getElementById(`qty-${item}`).innerText = items[item];
-        calculateTotal();
-      }
-    }
+        <div class="card">
+            <div class="card-title">Artículos en la Nota</div>
+            <div id="listaProductosEntrada">
+                <!-- Renglón inicial -->
+                <div class="renglon-item">
+                    <input type="text" placeholder="Modelo / Talla / Medida (Ej. Anillo T7)" class="ent-nombre" style="margin-bottom: 6px;">
+                    <div class="grid-2">
+                        <input type="number" placeholder="Cant." class="ent-cant" oninput="calcularInversionTotal()">
+                        <input type="number" placeholder="Costo ($)" class="ent-costo" oninput="calcularInversionTotal()">
+                    </div>
+                </div>
+            </div>
+            <button class="btn-outline" onclick="agregarRenglónEntrada()">+ Agregar otro producto</button>
+        </div>
 
-    function calculateTotal() {
-      let subtotal = 0;
-      for (let key in items) {
-        subtotal += items[key] * prices[key];
-      }
-      let giftBoxCost = document.getElementById('gift-box').checked ? 35 : 0;
-      let shippingCost = parseInt(document.getElementById('shipping').value) || 0;
-      let total = subtotal > 0 ? subtotal + giftBoxCost + shippingCost : 0;
-      
-      document.getElementById('total-price').innerText = `$${total} MXN`;
-      return { subtotal, giftBoxCost, shippingCost, total };
-    }
+        <div class="card">
+            <div class="total-box">
+                <span style="color: #94a3b8; font-size: 0.85rem;">Inversión Total:</span>
+                <span id="lblInversionTotal" class="total-amount" style="font-size: 1.1rem;">$0.00</span>
+            </div>
+            <button class="btn-primary" onclick="guardarEntradaMercancia()" style="background: #2563eb;">Guardar y Actualizar Stock</button>
+        </div>
+    </div>
+</div>
 
-    function filterCategory(cat) {
-      document.querySelectorAll('.category-tab').forEach(btn => {
-        btn.classList.remove('bg-amber-500', 'text-zinc-950');
-        btn.classList.add('bg-zinc-900', 'text-zinc-400', 'border', 'border-zinc-800');
-      });
-      
-      const activeBtn = document.getElementById(`tab-${cat}`);
-      activeBtn.classList.remove('bg-zinc-900', 'text-zinc-400', 'border', 'border-zinc-800');
-      activeBtn.classList.add('bg-amber-500', 'text-zinc-950');
+<script>
+    // Inicialización de fechas
+    const fechaActual = new Date().toISOString().split('T')[0];
+    document.getElementById('fechaHoy').innerText = new Date().toLocaleDateString();
+    document.getElementById('inputFecha').value = fechaActual;
 
-      document.querySelectorAll('.product-card').forEach(card => {
-        if (cat === 'todos' || card.classList.contains(`item-${cat}`)) {
-          card.classList.remove('hidden');
+    // Estado global simulado
+    let carrito = [];
+    let cajaData = { tickets: 0, efectivo: 0, ventas: 0 };
+
+    // Control de Vistas
+    function cambiarVista(vista) {
+        if(vista === 'venta') {
+            document.getElementById('vistaVenta').classList.add('active');
+            document.getElementById('vistaEntrada').classList.remove('active');
+            document.getElementById('btnTabVenta').classList.add('active');
+            document.getElementById('btnTabEntrada').classList.remove('active');
         } else {
-          card.classList.add('hidden');
+            document.getElementById('vistaEntrada').classList.add('active');
+            document.getElementById('vistaVenta').classList.remove('active');
+            document.getElementById('btnTabEntrada').classList.add('active');
+            document.getElementById('btnTabVenta').classList.remove('active');
         }
-      });
     }
 
-    function sendOrder() {
-      const { subtotal, giftBoxCost, shippingCost, total } = calculateTotal();
-      if (subtotal === 0) {
-        alert('Por favor selecciona al menos una pieza de joyería.');
-        return;
-      }
-
-      const customerName = document.getElementById('customer-name').value.trim() || 'No especificado';
-      const address = document.getElementById('address').value.trim() || 'Punto de entrega a coordinar';
-      const shippingText = document.getElementById('shipping').options[document.getElementById('shipping').selectedIndex].text;
-      const paymentMethod = document.querySelector('input[name="payment"]:checked').value;
-      const giftNote = document.getElementById('gift-note').value.trim();
-
-      let msg = `✨ *NUEVO PEDIDO - MOONSUN JOYERÍA*\n`;
-      msg += `----------------------------------\n`;
-      msg += `👤 *Cliente:* ${customerName}\n\n`;
-      msg += `🛍️ *PIEZAS SELECCIONADAS:*\n`;
-      
-      if (items.collarMoon > 0) {
-        let mat = document.getElementById('mat-collarMoon').value;
-        msg += `• ${items.collarMoon}x Collar Astro Moon ($${items.collarMoon * 280})\n  - Acabado: ${mat}\n`;
-      }
-      if (items.arracadasChunky > 0) {
-        let mat = document.getElementById('mat-arracadasChunky').value;
-        msg += `• ${items.arracadasChunky}x Arracadas Chunky Huggies ($${items.arracadasChunky * 220})\n  - Acabado: ${mat}\n`;
-      }
-      if (items.pulseraCuban > 0) {
-        let mat = document.getElementById('mat-pulseraCuban').value;
-        msg += `• ${items.pulseraCuban}x Pulsera Cuban Link ($${items.pulseraCuban * 250})\n  - Acabado: ${mat}\n`;
-      }
-
-      if (giftBoxCost > 0 || giftNote) {
-        msg += `\n🎁 *REGALO & PRESENTACIÓN:*\n`;
-        if (giftBoxCost > 0) msg += `• Empaque Especial Moonsun (+$35 MXN)\n`;
-        if (giftNote) msg += `• Nota en tarjeta: "${giftNote}"\n`;
-      }
-
-      msg += `\n📦 *ENVÍO Y DETALLES:*\n`;
-      msg += `• Método: ${shippingText}\n`;
-      msg += `• Dirección: ${address}\n`;
-
-      msg += `\n💰 *RESUMEN DE PAGO:*\n`;
-      msg += `• Subtotal joyas: $${subtotal} MXN\n`;
-      if (giftBoxCost > 0) msg += `• Empaque: $${giftBoxCost} MXN\n`;
-      msg += `• Envío: $${shippingCost} MXN\n`;
-      msg += `• *TOTAL: $${total} MXN*\n`;
-      msg += `• Método elegido: ${paymentMethod}\n`;
-
-      window.open(`https://wa.me/${PHONE_NUMBER}?text=${encodeURIComponent(msg)}`, '_blank');
+    // Lógica de Venta y Ticket
+    function simularEscaneo() {
+        const productoDemo = { nombre: "Anillo Acero Clásico T7", precio: 150.00 };
+        agregarAlCarritoDirecto(productoDemo);
     }
-  </script>
+
+    function agregarAlTicket() {
+        const input = document.getElementById('codigoBarrasInput');
+        if(!input.value) return;
+        
+        const productoDemo = { nombre: `Pieza SKU: ${input.value}`, precio: 200.00 };
+        agregarAlCarritoDirecto(productoDemo);
+        input.value = '';
+    }
+
+    function agregarAlCarritoDirecto(prod) {
+        carrito.push(prod);
+        actualizarVistaTicket();
+    }
+
+    function actualizarVistaTicket() {
+        const contenedor = document.getElementById('ticketContenido');
+        if(carrito.length === 0) {
+            contenedor.innerHTML = `<div style="color: #64748b; text-align: center; padding: 20px;">Ticket vacío. Selecciona o escanea una pieza.</div>`;
+            document.getElementById('totalVenta').innerText = '$0.00';
+            return;
+        }
+
+        let html = '';
+        let total = 0;
+        carrito.forEach((item, index) => {
+            total += item.precio;
+            html += `<div class="ticket-item"><span>${item.nombre}</span> <strong>$${item.precio.toFixed(2)}</strong></div>`;
+        });
+        contenedor.innerHTML = html;
+        document.getElementById('totalVenta').innerText = `$${total.toFixed(2)}`;
+        calcularCambio();
+    }
+
+    function vaciarTicket() {
+        carrito = [];
+        actualizarVistaTicket();
+    }
+
+    function calcularCambio() {
+        let total = carrito.reduce((acc, item) => acc + item.precio, 0);
+        let efectivo = parseFloat(document.getElementById('pagoEfectivo').value) || 0;
+        let cambio = efectivo - total;
+        document.getElementById('cambioDevolver').value = cambio >= 0 ? `$${cambio.toFixed(2)}` : '$0.00';
+    }
+
+    function finalizarCobro() {
+        let total = carrito.reduce((acc, item) => acc + item.precio, 0);
+        if(total <= 0) {
+            alert("El ticket está vacío.");
+            return;
+        }
+
+        let efectivo = parseFloat(document.getElementById('pagoEfectivo').value) || 0;
+        if(efectivo < total) {
+            alert("El efectivo es menor al total de la compra.");
+            return;
+        }
+
+        cajaData.tickets += 1;
+        cajaData.efectivo += total;
+        cajaData.ventas += total;
+
+        document.getElementById('cajaTickets').innerText = cajaData.tickets;
+        document.getElementById('cajaEfectivo').innerText = `$${cajaData.efectivo.toFixed(2)}`;
+        document.getElementById('cajaVentas').innerText = `$${cajaData.ventas.toFixed(2)}`;
+
+        alert("¡Venta cobrada con éxito en Moon&sun!");
+        vaciarTicket();
+        document.getElementById('pagoEfectivo').value = '0.00';
+    }
+
+    // Lógica de Entrada de Mercancía
+    function agregarRenglónEntrada() {
+        const contenedor = document.getElementById('listaProductosEntrada');
+        const nuevoDiv = document.createElement('div');
+        nuevoDiv.className = 'renglon-item';
+        nuevoDiv.innerHTML = `
+            <input type="text" placeholder="Modelo / Talla / Medida" class="ent-nombre" style="margin-bottom: 6px;">
+            <div class="grid-2">
+                <input type="number" placeholder="Cant." class="ent-cant" oninput="calcularInversionTotal()">
+                <input type="number" placeholder="Costo ($)" class="ent-costo" oninput="calcularInversionTotal()">
+            </div>
+        `;
+        contenedor.appendChild(nuevoDiv);
+    }
+
+    function calcularInversionTotal() {
+        let totalInversion = 0;
+        const renglones = document.querySelectorAll('.renglon-item');
+        renglones.forEach(r => {
+            const cant = parseFloat(r.querySelector('.ent-cant').value) || 0;
+            const costo = parseFloat(r.querySelector('.ent-costo').value) || 0;
+            totalInversion += (cant * costo);
+        });
+        document.getElementById('lblInversionTotal').innerText = `$${totalInversion.toFixed(2)}`;
+    }
+
+    function guardarEntradaMercancia() {
+        const proveedor = document.getElementById('inputProveedor').value;
+        if(!proveedor) {
+            alert("Por favor ingresa el nombre del proveedor.");
+            return;
+        }
+        alert("¡Entrada de mercancía registrada y stock actualizado en Moon&sun!");
+        cambiarVista('venta');
+    }
+</script>
+
 </body>
 </html>
