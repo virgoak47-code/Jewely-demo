@@ -34,40 +34,410 @@
 </div>
 </div>
 
+
 <script>
-const INV_KEY='moonsun_inventario_v3', NOTA_KEY='moonsun_nota_v3', CAJA_KEY='moonsun_caja_v3';
-const catalogoInicial=[
-{sku:'750101',nombre:'Anillo Ajustable Zirconia T7',precio:180,costo:0,cantidad:0},
-{sku:'750102',nombre:'Cadena Eslabón Cubano 50cm',precio:320,costo:0,cantidad:0},
-{sku:'750103',nombre:'Pulsera Esclava Acero Dama',precio:250,costo:0,cantidad:0},
-{sku:'750104',nombre:'Arracadas Clásicas 30mm',precio:190,costo:0,cantidad:0}
+'use strict';
+
+const INV_KEY = 'moonsun_inventario_v3';
+const NOTA_KEY = 'moonsun_nota_v3';
+const CAJA_KEY = 'moonsun_caja_v3';
+
+const catalogoInicial = [
+  {sku:'750101', nombre:'Anillo Ajustable Zirconia T7', precio:180, costo:0, cantidad:0},
+  {sku:'750102', nombre:'Cadena Eslabón Cubano 50cm', precio:320, costo:0, cantidad:0},
+  {sku:'750103', nombre:'Pulsera Esclava Acero Dama', precio:250, costo:0, cantidad:0},
+  {sku:'750104', nombre:'Arracadas Clásicas 30mm', precio:190, costo:0, cantidad:0}
 ];
-function load(k,d){try{const x=localStorage.getItem(k);return x?JSON.parse(x):d}catch(e){return d}}
-function save(k,v){localStorage.setItem(k,JSON.stringify(v))}
-function today(){const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')}
-function money(n){return '$'+Number(n||0).toFixed(2)}
-function esc(s){return String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]))}
-let inventario=load(INV_KEY,null);if(!Array.isArray(inventario)){inventario=catalogoInicial.map(x=>({...x}));save(INV_KEY,inventario)}
-let notaEntrada=load(NOTA_KEY,[]);if(!Array.isArray(notaEntrada))notaEntrada=[];
-let cajaData=load(CAJA_KEY,null);if(!cajaData||cajaData.fecha!==today()){cajaData={fecha:today(),tickets:0,efectivo:0,ventas:0};save(CAJA_KEY,cajaData)}
-let carrito=[],html5QrCode=null,camaraEncendida=false,procesandoCodigo=false;
 
-document.getElementById('fechaHoy').innerText=new Date().toLocaleDateString('es-MX');document.getElementById('inputFecha').value=today();renderizarTicket();renderizarCaja();renderizarNotaEntrada();renderizarInventario();filtrarInventario();
-function cambiarVista(v){if(camaraEncendida)detenerCamara();const venta=v==='venta';document.getElementById('vistaVenta').classList.toggle('active',venta);document.getElementById('vistaEntrada').classList.toggle('active',!venta);document.getElementById('btnTabVenta').classList.toggle('active',venta);document.getElementById('btnTabEntrada').classList.toggle('active',!venta);if(!venta){renderizarNotaEntrada();renderizarInventario()}}
-function buscarSku(s){const q=String(s||'').trim().toLowerCase();return inventario.find(p=>String(p.sku||'').toLowerCase()===q)||null}
-function filtrarInventario(){const q=document.getElementById('buscarNombreInput').value.trim().toLowerCase(),c=document.getElementById('resultadosBusqueda');if(!q){c.innerHTML='<div class="empty-box">Escribe el nombre, tipo, talla, medida o SKU para buscar.</div>';return}const r=inventario.filter(p=>String(p.sku||'').toLowerCase().includes(q)||String(p.nombre||'').toLowerCase().includes(q)).slice(0,30);if(!r.length){c.innerHTML='<div class="mensaje warn" style="display:block">⚠️ No se encontró ese artículo en el inventario.</div>';return}c.innerHTML=r.map(p=>`<div class="search-item"><div class="search-item-top"><div><div class="search-item-name">${esc(p.nombre)}</div><div class="search-item-meta">SKU: ${esc(p.sku||'Sin SKU')} · Stock: <span class="${Number(p.cantidad)>0?'stock-ok':'stock-zero'}">${Number(p.cantidad)||0}</span></div></div><div class="search-item-price">${money(p.precio)}</div></div><button class="btn-small" style="width:100%;margin-top:7px" onclick="addInv('${encodeURIComponent(String(p.sku||''))}')">+ Agregar al ticket</button></div>`).join('')}
-function addInv(e){const p=buscarSku(decodeURIComponent(e));if(!p)return;if(Number(p.cantidad)<=0){msg('mensajeScanner','⚠️ Ese artículo no tiene existencias.','warn');return}const x=carrito.find(i=>i.sku===p.sku),n=x?x.cantidad:0;if(n>=Number(p.cantidad)){msg('mensajeScanner','⚠️ Ya agregaste todo el stock disponible.','warn');return}if(x)x.cantidad++;else carrito.push({sku:p.sku,nombre:p.nombre,precio:Number(p.precio),cantidad:1});renderizarTicket()}
-function agregarAlTicketPorInput(){const inp=document.getElementById('codigoBarrasInput'),sku=inp.value.trim();if(!sku)return;const p=buscarSku(sku);if(!p){msg('mensajeScanner','⚠️ Código '+sku+' no está registrado en el inventario.','warn');return}if(Number(p.cantidad)<=0){msg('mensajeScanner','⚠️ '+p.nombre+' está sin existencias.','warn');return}const x=carrito.find(i=>i.sku===p.sku),n=x?x.cantidad:0;if(n>=Number(p.cantidad)){msg('mensajeScanner','⚠️ No hay más piezas disponibles de '+p.nombre+'.','warn');return}if(x)x.cantidad++;else carrito.push({sku:p.sku,nombre:p.nombre,precio:Number(p.precio),cantidad:1});inp.value='';document.getElementById('buscarNombreInput').value='';filtrarInventario();renderizarTicket();msg('mensajeScanner','✓ '+p.nombre+' agregado al ticket.','ok')}
-function renderizarTicket(){const c=document.getElementById('ticketContenido');if(!carrito.length){c.innerHTML='<div class="empty-box">Ticket vacío. Escanea o busca una pieza.</div>';document.getElementById('totalVenta').innerText='$0.00';document.getElementById('cambioDevolver').value='$0.00';return}let t=0;c.innerHTML=carrito.map((i,k)=>{const s=Number(i.precio)*Number(i.cantidad);t+=s;return `<div class="ticket-item"><div class="ticket-name"><strong>${esc(i.nombre)}</strong><div class="ticket-meta">SKU: ${esc(i.sku)} · Cant.: ${i.cantidad}</div></div><div class="ticket-right"><strong>${money(s)}</strong><br><span class="ticket-remove" onclick="quitarTicket(${k})">Quitar</span></div></div>`}).join('');document.getElementById('totalVenta').innerText=money(t);calcularCambio()}
-function quitarTicket(k){if(!carrito[k])return;if(carrito[k].cantidad>1)carrito[k].cantidad--;else carrito.splice(k,1);renderizarTicket()}
-function vaciarTicket(){carrito=[];renderizarTicket();document.getElementById('pagoEfectivo').value='0.00';calcularCambio()}
-function calcularCambio(){const t=carrito.reduce((s,i)=>s+Number(i.precio)*Number(i.cantidad),0),e=Number(document.getElementById('pagoEfectivo').value)||0,c=e-t;document.getElementById('cambioDevolver').value=c>=0?money(c):'$0.00'}
-function finalizarCobro(){const t=carrito.reduce((s,i)=>s+Number(i.precio)*Number(i.cantidad),0),e=Number(document.getElementById('pagoEfectivo').value)||0;if(t<=0){alert('El ticket está vacío.');return}if(e<t){alert('El efectivo es menor al total de la compra.');return}for(const i of carrito){const p=buscarSku(i.sku);if(!p||Number(p.cantidad)<Number(i.cantidad)){alert('No hay suficiente stock para: '+i.nombre);return}}carrito.forEach(i=>{const p=buscarSku(i.sku);p.cantidad-=Number(i.cantidad)});cajaData.tickets++;cajaData.efectivo+=t;cajaData.ventas+=t;save(INV_KEY,inventario);save(CAJA_KEY,cajaData);alert('¡Venta cobrada con éxito en Moon&sun!');vaciarTicket();renderizarCaja();renderizarInventario();filtrarInventario()}
-function renderizarCaja(){document.getElementById('cajaTickets').innerText=cajaData.tickets;document.getElementById('cajaEfectivo').innerText=money(cajaData.efectivo);document.getElementById('cajaVentas').innerText=money(cajaData.ventas)}
+let inventario = cargar(INV_KEY, null);
+if (!Array.isArray(inventario)) {
+  inventario = catalogoInicial.map(p => ({...p}));
+  guardar(INV_KEY, inventario);
+}
 
-function agregarProductoANota(){const sku=document.getElementById('entSku').value.trim(),nombre=document.getElementById('entNombre').value.trim(),cant=Number(document.getElementById('entCant').value),costo=Number(document.getElementById('entCosto').value),precio=Number(document.getElementById('entPrecio').value);if(!sku){alert('Ingresa el código o SKU del producto.');return}if(!nombre){alert('Ingresa el nombre o modelo del producto.');return}if(!Number.isFinite(cant)||cant<=0){alert('La cantidad debe ser mayor que cero.');return}if(!Number.isFinite(costo)||costo<0){alert('Ingresa un costo válido.');return}if(!Number.isFinite(precio)||precio<0){alert('Ingresa un precio de venta válido.');return}const x=notaEntrada.find(i=>String(i.sku).toLowerCase()===sku.toLowerCase());if(x){x.cantidad+=cant;x.nombre=nombre;x.costo=costo;x.precio=precio}else notaEntrada.push({sku,nombre,cantidad:cant,costo,precio});save(NOTA_KEY,notaEntrada);renderizarNotaEntrada();['entSku','entNombre','entCant','entCosto','entPrecio'].forEach(id=>document.getElementById(id).value='');document.getElementById('entSku').focus()}
-function renderizarNotaEntrada(){const c=document.getElementById('listaProductosEntrada'),num=document.getElementById('contadorEntrada');num.innerText=notaEntrada.length+(notaEntrada.length===1?' producto':' productos');if(!notaEntrada.length){c.innerHTML='<div class="empty-box">Todavía no has agregado productos a esta nota.</div>';document.getElementById('lblInversionTotal').innerText='$0.00';return}let total=0;c.innerHTML=notaEntrada.map((i,k)=>{const s=Number(i.cantidad)*Number(i.costo);total+=s;return `<div class="capturado-item"><div class="capturado-top"><strong>${esc(i.nombre)}</strong><button class="btn-danger" onclick="eliminarNota(${k})">✕</button></div><div class="capturado-meta">SKU: ${esc(i.sku)}<br>Cantidad: ${i.cantidad} · Costo: ${money(i.costo)} · Venta: ${money(i.precio)}</div><div class="capturado-total">Subtotal: ${money(s)}</div></div>`}).join('');document.getElementById('lblInversionTotal').innerText=money(total)}
-function eliminarNota(k){notaEntrada.splice(k,1);save(NOTA_KEY,notaEntrada);renderizarNotaEntrada()}
-function limpiarNotaEntrada(){if(!notaEntrada.length)return;if(!confirm('¿Quieres borrar todos los productos capturados en esta nota?'))return;notaEntrada=[];save(NOTA_KEY,notaEntrada);renderizarNotaEntrada()}
-function guardarEntradaMercancia(){const prov=document.getElementById('inputProveedor').value.trim(),fecha=document.getElementById('inputFecha').value;if(!prov){alert('Por favor ingresa el nombre del proveedor.');return}if(!fecha){alert('Por favor selecciona la fecha.');return}if(!notaEntrada.length){alert('Primero agrega al menos un producto a la nota.');return}notaEntrada.forEach(i=>{let p=buscarSku(i.sku);if(p){p.nombre=i.nombre;p.costo=Number(i.costo);p.precio=Number(i.precio);p.cantidad=Number(p.cantidad||0)+Number(i.cantidad)}else inventario.push({sku:i.sku,nombre:i.nombre,cantidad:Number(i.cantidad),costo:Number(i.costo),precio:Number(i.precio)})});save(INV_KEY,inventario);notaEntrada=[];save(NOTA_KEY,notaEntrada);renderizarNotaEntrada();renderizarInventario();document.getElementById('inputProveedor').value='';document.getElementById('inputFecha').value=today();alert('✓ Entrada registrada. El inventario fue actualizado correctamente.');cambiarVista('venta')}
-function renderizarInventario(){const c=document.getElementById('inventarioVista');if(!inventario.length){c.innerHTML='<div class="empty-box">No hay artículos registrados.</div>';return}c.innerHTML=inventario.map(p=>`<div class="renglon-item"><div class="cap
+let notaEntrada = cargar(NOTA_KEY, []);
+if (!Array.isArray(notaEntrada)) notaEntrada = [];
+
+let cajaData = cargar(CAJA_KEY, null);
+if (!cajaData || cajaData.fecha !== fechaActual()) {
+  cajaData = {fecha:fechaActual(), tickets:0, efectivo:0, ventas:0};
+  guardar(CAJA_KEY, cajaData);
+}
+
+let carrito = [];
+let html5QrCode = null;
+let camaraEncendida = false;
+let procesandoCodigo = false;
+
+/* =========================
+   UTILIDADES
+========================= */
+
+function cargar(clave, valorPorDefecto) {
+  try {
+    const dato = localStorage.getItem(clave);
+    return dato ? JSON.parse(dato) : valorPorDefecto;
+  } catch (e) {
+    console.error('Error leyendo localStorage:', e);
+    return valorPorDefecto;
+  }
+}
+
+function guardar(clave, valor) {
+  try {
+    localStorage.setItem(clave, JSON.stringify(valor));
+    return true;
+  } catch (e) {
+    console.error('Error guardando localStorage:', e);
+    mostrarMensaje('mensajeScanner','⚠️ El navegador no permitió guardar los datos.','warn');
+    return false;
+  }
+}
+
+function fechaActual() {
+  const d = new Date();
+  return d.getFullYear() + '-' +
+    String(d.getMonth()+1).padStart(2,'0') + '-' +
+    String(d.getDate()).padStart(2,'0');
+}
+
+function dinero(n) {
+  return '$' + Number(n || 0).toFixed(2);
+}
+
+function esc(texto) {
+  return String(texto == null ? '' : texto).replace(/[&<>"']/g, function(m) {
+    return {
+      '&':'&amp;',
+      '<':'&lt;',
+      '>':'&gt;',
+      '"':'&quot;',
+      "'":'&#039;'
+    }[m];
+  });
+}
+
+function mostrarMensaje(id, texto, tipo) {
+  const el = document.getElementById(id);
+  if (!el) return;
+
+  el.className = 'mensaje ' + (tipo || '');
+  el.textContent = texto;
+  el.style.display = 'block';
+
+  clearTimeout(el._timer);
+  el._timer = setTimeout(function() {
+    el.style.display = 'none';
+  }, 4000);
+}
+
+function productoPorSku(sku) {
+  const buscado = String(sku || '').trim().toLowerCase();
+  return inventario.find(function(p) {
+    return String(p.sku || '').trim().toLowerCase() === buscado;
+  }) || null;
+}
+
+/* =========================
+   INICIO
+========================= */
+
+function iniciarAplicacion() {
+  document.getElementById('fechaHoy').textContent =
+    new Date().toLocaleDateString('es-MX');
+
+  document.getElementById('inputFecha').value = fechaActual();
+
+  renderizarTicket();
+  renderizarCaja();
+  renderizarNotaEntrada();
+  renderizarInventario();
+  filtrarInventario();
+
+  /* Evita que Enter recargue el formulario o haga acciones inesperadas. */
+  document.getElementById('codigoBarrasInput').addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      agregarAlTicketPorInput();
+    }
+  });
+
+  /* Mensaje de error real si algún navegador bloquea una función. */
+  window.addEventListener('error', function(e) {
+    console.error('Moon&sun:', e.error || e.message);
+  });
+}
+
+/* =========================
+   VISTAS
+========================= */
+
+function cambiarVista(vista) {
+  if (camaraEncendida) detenerCamara();
+
+  const esVenta = vista === 'venta';
+
+  document.getElementById('vistaVenta').classList.toggle('active', esVenta);
+  document.getElementById('vistaEntrada').classList.toggle('active', !esVenta);
+
+  document.getElementById('btnTabVenta').classList.toggle('active', esVenta);
+  document.getElementById('btnTabEntrada').classList.toggle('active', !esVenta);
+
+  if (!esVenta) {
+    renderizarNotaEntrada();
+    renderizarInventario();
+  }
+}
+
+/* =========================
+   INVENTARIO / BÚSQUEDA
+========================= */
+
+function filtrarInventario() {
+  const input = document.getElementById('buscarNombreInput');
+  const resultados = document.getElementById('resultadosBusqueda');
+  const texto = input.value.trim().toLowerCase();
+
+  if (!texto) {
+    resultados.innerHTML =
+      '<div class="empty-box">Escribe nombre, tipo, talla, medida o SKU para buscar.</div>';
+    return;
+  }
+
+  const lista = inventario.filter(function(p) {
+    return String(p.sku || '').toLowerCase().includes(texto) ||
+           String(p.nombre || '').toLowerCase().includes(texto);
+  }).slice(0, 30);
+
+  if (!lista.length) {
+    resultados.innerHTML =
+      '<div class="mensaje warn" style="display:block">⚠️ No se encontró ese artículo en el inventario.</div>';
+    return;
+  }
+
+  resultados.innerHTML = lista.map(function(p) {
+    const stock = Number(p.cantidad) || 0;
+
+    return `
+      <div class="search-item">
+        <div class="search-item-top">
+          <div>
+            <div class="search-item-name">${esc(p.nombre)}</div>
+            <div class="search-item-meta">
+              SKU: ${esc(p.sku || 'Sin SKU')} ·
+              Stock:
+              <span class="${stock > 0 ? 'stock-ok' : 'stock-zero'}">${stock}</span>
+            </div>
+          </div>
+          <div class="search-item-price">${dinero(p.precio)}</div>
+        </div>
+
+        <button
+          class="btn-small"
+          style="width:100%;margin-top:7px"
+          onclick="agregarInventarioAlTicket('${encodeURIComponent(String(p.sku || ''))}')">
+          + Agregar al ticket
+        </button>
+      </div>
+    `;
+  }).join('');
+}
+
+function agregarInventarioAlTicket(skuCodificado) {
+  const sku = decodeURIComponent(skuCodificado);
+  const producto = productoPorSku(sku);
+
+  if (!producto) return;
+
+  const stock = Number(producto.cantidad) || 0;
+
+  if (stock <= 0) {
+    mostrarMensaje('mensajeScanner','⚠️ Ese artículo no tiene existencias.','warn');
+    return;
+  }
+
+  const existente = carrito.find(function(item) {
+    return item.sku === producto.sku;
+  });
+
+  const cantidadActual = existente ? existente.cantidad : 0;
+
+  if (cantidadActual >= stock) {
+    mostrarMensaje('mensajeScanner','⚠️ Ya agregaste todo el stock disponible.','warn');
+    return;
+  }
+
+  if (existente) {
+    existente.cantidad++;
+  } else {
+    carrito.push({
+      sku: producto.sku,
+      nombre: producto.nombre,
+      precio: Number(producto.precio) || 0,
+      cantidad: 1
+    });
+  }
+
+  renderizarTicket();
+  mostrarMensaje('mensajeScanner','✓ ' + producto.nombre + ' agregado al ticket.','ok');
+}
+
+function agregarAlTicketPorInput() {
+  const input = document.getElementById('codigoBarrasInput');
+  const codigo = input.value.trim();
+
+  if (!codigo) return;
+
+  const producto = productoPorSku(codigo);
+
+  if (!producto) {
+    mostrarMensaje(
+      'mensajeScanner',
+      '⚠️ Código ' + codigo + ' no está registrado en el inventario.',
+      'warn'
+    );
+    return;
+  }
+
+  const stock = Number(producto.cantidad) || 0;
+
+  if (stock <= 0) {
+    mostrarMensaje(
+      'mensajeScanner',
+      '⚠️ ' + producto.nombre + ' está sin existencias.',
+      'warn'
+    );
+    return;
+  }
+
+  const existente = carrito.find(function(item) {
+    return item.sku === producto.sku;
+  });
+
+  const cantidadActual = existente ? existente.cantidad : 0;
+
+  if (cantidadActual >= stock) {
+    mostrarMensaje(
+      'mensajeScanner',
+      '⚠️ No hay más piezas disponibles de ' + producto.nombre + '.',
+      'warn'
+    );
+    return;
+  }
+
+  if (existente) {
+    existente.cantidad++;
+  } else {
+    carrito.push({
+      sku: producto.sku,
+      nombre: producto.nombre,
+      precio: Number(producto.precio) || 0,
+      cantidad: 1
+    });
+  }
+
+  input.value = '';
+  document.getElementById('buscarNombreInput').value = '';
+  filtrarInventario();
+  renderizarTicket();
+
+  mostrarMensaje(
+    'mensajeScanner',
+    '✓ ' + producto.nombre + ' agregado al ticket.',
+    'ok'
+  );
+}
+
+/* =========================
+   TICKET
+========================= */
+
+function renderizarTicket() {
+  const contenedor = document.getElementById('ticketContenido');
+
+  if (!carrito.length) {
+    contenedor.innerHTML =
+      '<div class="empty-box">Ticket vacío. Escanea o busca una pieza.</div>';
+
+    document.getElementById('totalVenta').textContent = '$0.00';
+    document.getElementById('cambioDevolver').value = '$0.00';
+    return;
+  }
+
+  let total = 0;
+
+  contenedor.innerHTML = carrito.map(function(item, indice) {
+    const subtotal = Number(item.precio) * Number(item.cantidad);
+    total += subtotal;
+
+    return `
+      <div class="ticket-item">
+        <div class="ticket-name">
+          <strong>${esc(item.nombre)}</strong>
+          <div class="ticket-meta">
+            SKU: ${esc(item.sku)} · Cant.: ${item.cantidad}
+          </div>
+        </div>
+
+        <div class="ticket-right">
+          <strong>${dinero(subtotal)}</strong><br>
+          <span class="ticket-remove" onclick="quitarDelTicket(${indice})">
+            Quitar
+          </span>
+        </div>
+      </div>
+    `;
+  }).join('');
+
+  document.getElementById('totalVenta').textContent = dinero(total);
+  calcularCambio();
+}
+
+function quitarDelTicket(indice) {
+  if (!carrito[indice]) return;
+
+  if (carrito[indice].cantidad > 1) {
+    carrito[indice].cantidad--;
+  } else {
+    carrito.splice(indice, 1);
+  }
+
+  renderizarTicket();
+}
+
+function vaciarTicket() {
+  carrito = [];
+  document.getElementById('pagoEfectivo').value = '0.00';
+  renderizarTicket();
+  calcularCambio();
+}
+
+function calcularCambio() {
+  const total = carrito.reduce(function(suma, item) {
+    return suma + Number(item.precio) * Number(item.cantidad);
+  }, 0);
+
+  const efectivo =
+    Number(document.getElementById('pagoEfectivo').value) || 0;
+
+  const cambio = efectivo - total;
+
+  document.getElementById('cambioDevolver').value =
+    cambio >= 0 ? dinero(cambio) : '$0.00';
+}
+
+function finalizarCobro() {
+  const total = carrito.reduce(function(suma, item) {
+    return suma + Number(item.precio) * Number(item.cantidad);
+  }, 0);
+
+  const efectivo =
+    Number(document.getElementById('pagoEfectivo').value) || 0;
+
+  if (total <= 0) {
+    alert('El ticket está vacío.');
+    return;
+  }
+
+  if (efectivo < total) {
+    alert('El efectivo es menor al to
